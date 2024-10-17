@@ -10,7 +10,7 @@ Ce projet permet de scraper les informations sur les livres depuis le site [Book
 
 ## Prérequis
 
-- Python 3.x
+- Python 3.12
 - Les bibliothèques Python suivantes :
   - `requests`
   - `beautifulsoup4`
