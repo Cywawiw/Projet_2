@@ -1,0 +1,6 @@
+# Ignorer le dossier output
+output/
+
+# Ignorer l'environnement virtuel
+venv/
+env/
