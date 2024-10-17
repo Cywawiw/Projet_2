@@ -22,11 +22,19 @@ Ce projet permet de scraper les informations sur les livres depuis le site [Book
    git clone https://github.com/votre-utilisateur/nom-du-projet.git
    cd nom-du-projet
    ```
- 2. Installer les dépendances
+ 2.Créer un environnement virtuel :
+  ```bash
+    python -m venv venv
+  ```
+3. Activer l'environnement virtuel
+   -Sur Windows, exécutez : `venv\Scripts\activate`
+   -Sur macOS et Linux, exécutez :`source venv/bin/activate`
+
+ 4. Installer les dépendances
     ```bash
     pip install -r requirements.txt
     ```
-3.Utilisation
+## Utilisation
 Exécuter le script principal :
   ```bash
   python main.py
