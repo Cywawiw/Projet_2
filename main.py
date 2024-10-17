@@ -1,33 +1,51 @@
 import requests
 from bs4 import BeautifulSoup
 import csv
+import os
+import re
 
 # URL de base
 base_url = "https://books.toscrape.com/"
 category_url = "catalogue/category/books/"
 
 
-# Fonction pour nettoyer les chaînes de caractères et convertir les prix en float
-def clean_price(price_str):
-    # Enlever les caractères indésirables, comme 'Â'
-    cleaned_str = price_str.replace('Â', '').strip()
+# Fonction pour nettoyer les noms de fichiers
+def clean_filename(filename):
+    # Remplacer les caractères invalides par des underscores
+    filename = re.sub(r'[<>:"/\\|?*]', '_', filename)  # Supprime les caractères invalides
+    filename = filename.replace(':', '_')  # Remplace les deux-points par des underscores
+    # Limite à 150 caractères pour assurer un chemin valide
+    return filename[:150]
 
-    # Conversion en float pour les opérations numériques
-    price_value = float(cleaned_str.replace('£', ''))
-    return f"£{price_value:.2f}"  # Format avec symbole et deux décimales
+
+# Fonction pour télécharger les images
+def download_image(image_url, save_path):
+    # Créer le dossier avant de télécharger l'image
+    folder = os.path.dirname(save_path)
+    os.makedirs(folder, exist_ok=True)  # Créer le dossier de manière récursive
+
+    # Télécharger l'image
+    response = requests.get(image_url)
+    if response.status_code == 200:
+        try:
+            with open(save_path, 'wb') as file:  # 'wb' pour écrire en mode binaire
+                file.write(response.content)
+        except Exception as e:
+            print(f"Erreur lors de l'enregistrement de l'image : {e}")
 
 
-# Fonction pour extraire les informations détaillées d'un livre depuis sa page
+# Fonction pour extraire les informations détaillées d'un livre
 def extract_book_details(book_url):
     response = requests.get(book_url)
+    response.encoding = 'utf-8'  # Forcer l'encodage UTF-8
     soup = BeautifulSoup(response.text, 'html.parser')
 
     # Transformation des données
     url_page_produit = book_url
     upc = soup.select("table.table-striped tr:nth-child(1) td")[0].text
     titre = soup.select("h1")[0].text
-    prix_ttc = clean_price(soup.select("table.table-striped tr:nth-child(4) td")[0].text)  # Nettoyer ici
-    prix_ht = clean_price(soup.select("table.table-striped tr:nth-child(3) td")[0].text)  # Nettoyer ici
+    prix_ttc = soup.select("table.table-striped tr:nth-child(4) td")[0].text
+    prix_ht = soup.select("table.table-striped tr:nth-child(3) td")[0].text
     disponibilite = soup.select("table.table-striped tr:nth-child(6) td")[0].text
     description_produit = soup.select_one("meta[name='description']")['content'].strip()
     categorie = soup.select("ul.breadcrumb li:nth-child(3) a")[0].text.strip()
@@ -42,8 +60,8 @@ def extract_book_details(book_url):
         "product_page_url": url_page_produit,
         "universal_product_code (upc)": upc,
         "title": titre,
-        "price_including_tax": prix_ttc,  # Prix comme float avec symbole
-        "price_excluding_tax": prix_ht,  # Prix comme float avec symbole
+        "price_including_tax": prix_ttc,
+        "price_excluding_tax": prix_ht,
         "number_available": nombre_disponible,
         "product_description": description_produit,
         "category": categorie,
@@ -55,13 +73,14 @@ def extract_book_details(book_url):
 
 
 # Fonction pour extraire les livres d'une catégorie donnée
-def extract_books_from_category(category_url):
+def extract_books_from_category(category_url, category_name):
     all_books = []
     current_page = 1
 
     while True:
         url = f"{category_url}/page-{current_page}.html" if current_page > 1 else f"{category_url}/index.html"
         response = requests.get(url)
+        response.encoding = 'utf-8'  # Forcer l'encodage UTF-8
         soup = BeautifulSoup(response.text, 'html.parser')
 
         # Extraire les livres de la page
@@ -70,6 +89,13 @@ def extract_books_from_category(category_url):
             book_url = base_url + "catalogue/" + book.h3.a['href'].replace('../../../', '')
             book_details = extract_book_details(book_url)
             all_books.append(book_details)
+
+            # Nettoyer le titre pour créer un nom de fichier valide
+            safe_title = clean_filename(book_details['title'])
+            # Créer le chemin du fichier pour l'image
+            image_filename = f"output/{category_name.replace(' ', '_').lower()}/{safe_title}.jpg"
+
+            download_image(book_details['image_url'], image_filename)
 
         # Vérifier s'il y a une page suivante
         next_button = soup.find('li', class_='next')
@@ -82,18 +108,21 @@ def extract_books_from_category(category_url):
 
 # Fonction pour charger les livres dans un fichier CSV
 def save_to_csv(books, category_name):
-    filename = f"{category_name.replace(' ', '_').lower()}.csv"
+    # Créer le dossier de sortie pour la catégorie s'il n'existe pas
+    os.makedirs(f"output/{category_name.replace(' ', '_').lower()}", exist_ok=True)
+
+    filename = f"output/{category_name.replace(' ', '_').lower()}/{category_name.replace(' ', '_').lower()}.csv"
     keys = books[0].keys()  # Utiliser les clés du premier livre comme en-têtes de colonne
-    with open(filename, 'w', newline='', encoding='utf-8') as fichier:
+    with open(filename, 'w', newline='', encoding='utf-8-sig') as fichier:
         writer = csv.DictWriter(fichier, fieldnames=keys)
         writer.writeheader()
         writer.writerows(books)
-    print(f"CSV créé pour la catégorie '{category_name}' : {filename}")
 
 
 # Fonction pour extraire toutes les catégories depuis la page d'accueil
 def get_all_categories():
     response = requests.get(base_url + "index.html")
+    response.encoding = 'utf-8'  # Forcer l'encodage UTF-8
     soup = BeautifulSoup(response.text, 'html.parser')
     categories = soup.find('ul', class_='nav nav-list').find('ul').find_all('a')
 
@@ -111,9 +140,9 @@ def main():
     category_links = get_all_categories()
 
     for category_name, category_link in category_links.items():
-        print(f"Scraping catégorie : {category_name}")
-        books_data = extract_books_from_category(category_link.replace('index.html', ''))
+        books_data = extract_books_from_category(category_link.replace('index.html', ''), category_name)
         save_to_csv(books_data, category_name)
+
 
 # Appel direct à la fonction principale
 main()
