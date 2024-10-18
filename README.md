@@ -26,8 +26,8 @@ Ce projet permet de scraper les informations sur les livres depuis le site [Book
   ```bash
     python -m venv venv
   ```
-3. Activer l'environnement virtuel:
-   -Sur Windows, exécutez : `venv\Scripts\activate`
+3. Activer l'environnement virtuel :  
+   -Sur Windows, exécutez : `venv\Scripts\activate`  
    -Sur macOS et Linux, exécutez :`source venv/bin/activate`
 
  4. Installer les dépendances
