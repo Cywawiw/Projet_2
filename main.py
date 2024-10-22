@@ -8,15 +8,12 @@ import re
 base_url = "https://books.toscrape.com/"
 category_url = "catalogue/category/books/"
 
-
 # Fonction pour nettoyer les noms de fichiers
 def clean_filename(filename):
     # Remplacer les caractères invalides par des underscores
-    filename = re.sub(r'[<>:"/\\|?*]', '_', filename)  # Supprime les caractères invalides
-    filename = filename.replace(':', '_')  # Remplace les deux-points par des underscores
+    filename = re.sub(r'[<>:"/\\|?*\'’“”]', '_', filename)  # Supprime les caractères invalides
     # Limite à 150 caractères pour assurer un chemin valide
     return filename[:150]
-
 
 # Fonction pour télécharger les images
 def download_image(image_url, save_path):
@@ -32,7 +29,6 @@ def download_image(image_url, save_path):
                 file.write(response.content)
         except Exception as e:
             print(f"Erreur lors de l'enregistrement de l'image : {e}")
-
 
 # Fonction pour extraire les informations détaillées d'un livre
 def extract_book_details(book_url):
@@ -71,7 +67,6 @@ def extract_book_details(book_url):
 
     return donnees_livre
 
-
 # Fonction pour extraire les livres d'une catégorie donnée
 def extract_books_from_category(category_url, category_name):
     all_books = []
@@ -92,7 +87,7 @@ def extract_books_from_category(category_url, category_name):
 
             # Nettoyer le titre pour créer un nom de fichier valide
             safe_title = clean_filename(book_details['title'])
-            # Créer le chemin du fichier pour l'image
+            # Créer le chemin du fichier pour l'image avec les caractères nettoyés
             image_filename = f"output/{category_name.replace(' ', '_').lower()}/{safe_title}.jpg"
 
             download_image(book_details['image_url'], image_filename)
@@ -105,7 +100,6 @@ def extract_books_from_category(category_url, category_name):
 
     return all_books
 
-
 # Fonction pour charger les livres dans un fichier CSV
 def save_to_csv(books, category_name):
     # Créer le dossier de sortie pour la catégorie s'il n'existe pas
@@ -117,7 +111,6 @@ def save_to_csv(books, category_name):
         writer = csv.DictWriter(fichier, fieldnames=keys)
         writer.writeheader()
         writer.writerows(books)
-
 
 # Fonction pour extraire toutes les catégories depuis la page d'accueil
 def get_all_categories():
@@ -134,7 +127,6 @@ def get_all_categories():
 
     return category_links
 
-
 # Lancer le scraping pour toutes les catégories
 def main():
     category_links = get_all_categories()
@@ -142,7 +134,6 @@ def main():
     for category_name, category_link in category_links.items():
         books_data = extract_books_from_category(category_link.replace('index.html', ''), category_name)
         save_to_csv(books_data, category_name)
-
 
 # Appel direct à la fonction principale
 main()
