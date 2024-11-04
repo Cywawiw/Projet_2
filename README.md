@@ -19,8 +19,8 @@ Ce projet permet de scraper les informations sur les livres depuis le site [Book
 
 1. **Cloner le dépôt :**
    ```bash
-   git clone https://github.com/votre-utilisateur/Utilisez les bases de Python pour l'analyse de marché.git
-   cd Utilisez les bases de Python pour l'analyse de marché
+   git clone https://github.com/Cywawiw/Projet_2
+   cd Projet_2
    ```
  2.Créer un environnement virtuel :
   ```bash
