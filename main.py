@@ -4,14 +4,14 @@ import csv
 import os
 import re
 
-# URL de base
+# Déclaration des URL de base
 base_url = "https://books.toscrape.com/"
 category_url = "catalogue/category/books/"
 
-# Fonction pour nettoyer les noms de fichiers
+# Fonction pour transformer les noms de fichiers
 def clean_filename(filename):
     # Remplacer les caractères invalides par des underscores
-    filename = re.sub(r'[<>:"/\\|?*\'’“”]', '_', filename)  # Supprime les caractères invalides
+    filename = re.sub(r'[<>:"/\\|?*\'’“”]', '_', filename)
     # Limite à 150 caractères pour assurer un chemin valide
     return filename[:150]
 
@@ -36,7 +36,7 @@ def extract_book_details(book_url):
     response.encoding = 'utf-8'  # Forcer l'encodage UTF-8
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Transformation des données
+    # Extraction des données
     url_page_produit = book_url
     upc = soup.select("table.table-striped tr:nth-child(1) td")[0].text
     titre = soup.select("h1")[0].text
@@ -85,11 +85,10 @@ def extract_books_from_category(category_url, category_name):
             book_details = extract_book_details(book_url)
             all_books.append(book_details)
 
-            # Nettoyer le titre pour créer un nom de fichier valide
+            # Transformation du nom de l'image avec clean_filename
             safe_title = clean_filename(book_details['title'])
             # Créer le chemin du fichier pour l'image avec les caractères nettoyés
             image_filename = f"output/{category_name.replace(' ', '_').lower()}/{safe_title}.jpg"
-
             download_image(book_details['image_url'], image_filename)
 
         # Vérifier s'il y a une page suivante
@@ -102,15 +101,16 @@ def extract_books_from_category(category_url, category_name):
 
 # Fonction pour charger les livres dans un fichier CSV
 def save_to_csv(books, category_name):
-    # Créer le dossier de sortie pour la catégorie s'il n'existe pas
-    os.makedirs(f"output/{category_name.replace(' ', '_').lower()}", exist_ok=True)
-
+    # Définir le chemin du fichier CSV
     filename = f"output/{category_name.replace(' ', '_').lower()}/{category_name.replace(' ', '_').lower()}.csv"
     keys = books[0].keys()  # Utiliser les clés du premier livre comme en-têtes de colonne
+
+    # Écrire les données dans le fichier CSV
     with open(filename, 'w', newline='', encoding='utf-8-sig') as fichier:
         writer = csv.DictWriter(fichier, fieldnames=keys)
         writer.writeheader()
         writer.writerows(books)
+
 
 # Fonction pour extraire toutes les catégories depuis la page d'accueil
 def get_all_categories():
